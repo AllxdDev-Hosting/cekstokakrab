@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cek Stok Akrab (Real-Time + Refresh)</title>
+    <!-- Memuat Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Menggunakan font Inter yang modern dan bersih */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f8fa; /* Abu-abu yang sangat muda */
+        }
+        
+        /* Animasi CSS untuk loading spinner */
+        .loader {
+            border: 4px solid #e5e7eb; /* bg-gray-200 */
+            border-top: 4px solid #4f46e5; /* indigo-600 */
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 lg:p-12">
+
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-3xl md:text-4xl font-extrabold text-center text-gray-900 mb-6">
+            Live Stock Checker
+        </h1>
+
+        <!-- Tombol Refresh -->
+        <div class="text-center mb-10">
+            <button id="refresh-button" class="inline-flex items-center justify-center px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-indigo-400">
+                <!-- Ikon Heroicon: arrow-path (Refresh) -->
+                <svg id="refresh-icon" class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001a.75.75 0 0 1 .748.747 11.95 11.95 0 0 1-2.062 5.923c-1.5 2.113-3.75 3.52-6.474 4.008a12 12 0 1 1 2.802-13.923.75.75 0 0 1 .748-.747Z" />
+                </svg>
+                <span id="refresh-text">Refresh Stok</span>
+            </button>
+        </div>
+
+        <!-- Kontainer untuk dua kartu slot -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
+            
+            <!-- Kartu Slot 1 -->
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+                <div class="bg-gradient-to-r from-indigo-500 to-purple-600 p-5">
+                    <h2 class="text-2xl font-bold text-white text-center">
+                        Slot 1
+                    </h2>
+                </div>
+                <div class="p-4">
+                    <!-- Kontainer untuk data atau error -->
+                    <div id="content-1">
+                        <div id="loading-1" class="flex justify-center items-center py-10">
+                            <div class="loader"></div>
+                        </div>
+                        <div class="overflow-x-auto hidden" id="table-wrapper-1">
+                            <table class="w-full">
+                                <thead>
+                                    <tr class="text-gray-500 uppercase text-xs font-semibold">
+                                        <th class="p-3 text-left">Nama Paket</th>
+                                        <th class="p-3 text-center">Status</th>
+                                        <th class="p-3 text-center">Sisa Slot</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="api-1-body" class="text-gray-800">
+                                    <!-- Data akan diisi oleh JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Kartu Slot 2 -->
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+                <div class="bg-gradient-to-r from-teal-500 to-cyan-600 p-5">
+                    <h2 class="text-2xl font-bold text-white text-center">
+                        Slot 2
+                    </h2>
+                </div>
+                <div class="p-4">
+                     <!-- Kontainer untuk data atau error -->
+                    <div id="content-2">
+                        <div id="loading-2" class="flex justify-center items-center py-10">
+                            <div class="loader"></div>
+                        </div>
+                        <div class="overflow-x-auto hidden" id="table-wrapper-2">
+                            <table class="w-full">
+                                <thead>
+                                    <tr class="text-gray-500 uppercase text-xs font-semibold">
+                                        <th class="p-3 text-left">Nama Paket</th>
+                                        <th class="p-3 text-center">Status</th>
+                                        <th class="p-3 text-center">Sisa Slot</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="api-2-body" class="text-gray-800">
+                                    <!-- Data akan diisi oleh JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Legenda -->
+        <div class="text-center mt-10 text-gray-600">
+            <!-- (Legenda tetap sama) -->
+             <h3 class="font-semibold mb-3 text-lg">Legenda Status</h3>
+            <div class="flex justify-center items-center space-x-6">
+                <div class="flex items-center space-x-2">
+                    <svg class="w-6 h-6 text-green-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                    </svg>
+                    <span>Tersedia</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <svg class="w-6 h-6 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m9.75 9.75 4.5 4.5m0-4.5-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                    </svg>
+                    <span>Habis / Kosong</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // URL API
+        const api1 = 'https://xlstock.serversaya.site/api_v3/cek_stock_akrab';
+        const api2 = 'https://panel.khfy-store.com/api_v3/cek_stock_akrab';
+
+        // Elemen Tombol Refresh
+        const refreshButton = document.getElementById('refresh-button');
+        const buttonIcon = document.getElementById('refresh-icon');
+        const buttonText = document.getElementById('refresh-text');
+
+        // Ikon SVG
+        const iconAvailable = `
+            <svg class="w-6 h-6 text-green-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+            </svg>`;
+        const iconUnavailable = `
+            <svg class="w-6 h-6 text-red-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m9.75 9.75 4.5 4.5m0-4.5-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+            </svg>`;
+
+        /**
+         * Fungsi untuk mengisi tabel dengan data sukses
+         */
+        function populateTable(data, tbody) {
+            tbody.innerHTML = ''; // Kosongkan isi tabel sebelumnya
+            if (!data || data.length === 0) {
+                 tbody.innerHTML = '<tr><td colspan="3" class="text-center p-4 text-gray-500">API mengembalikan data kosong.</td></tr>';
+                 return;
+            }
+
+            data.forEach(item => {
+                const isAvailable = item.sisa_slot > 0;
+                const statusIcon = isAvailable ? iconAvailable : iconUnavailable;
+                const slotBadge = isAvailable ? 
+                    `<span class="bg-green-100 text-green-800 text-sm font-medium px-3 py-1 rounded-full">${item.sisa_slot}</span>` :
+                    `<span class="bg-red-100 text-red-800 text-sm font-medium px-3 py-1 rounded-full">${item.sisa_slot}</span>`;
+
+                const row = document.createElement('tr');
+                row.className = 'border-b border-gray-100';
+                row.innerHTML = `
+                    <td class="p-3.5 text-sm font-medium text-gray-900">${item.nama}</td>
+                    <td class="p-3.5 text-center">${statusIcon}</td>
+                    <td class="p-3.5 text-center">${slotBadge}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        /**
+         * Fungsi untuk menampilkan error di tabel
+         */
+        function showError(tbody, error) {
+            tbody.innerHTML = ''; // Kosongkan tabel
+            
+            let errorMessage = 'Gagal memuat data.';
+            if (error.message.includes('Failed to fetch')) {
+                errorMessage = 'Gagal terhubung. Server API mungkin offline atau ada masalah CORS.';
+            } else if (error.message.includes('timeout')) {
+                errorMessage = 'Request timeout. Server API lambat merespon.';
+            }
+
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td colspan="3" class="p-6 text-center text-red-600">
+                    <span class="font-bold">Terjadi Kesalahan:</span><br>
+                    <span class="text-sm">${errorMessage}</span><br>
+                    <span class="text-xs text-gray-500 mt-2">Coba refresh atau cek konsol browser (F12) untuk detail.</span>
+                </td>
+            `;
+            tbody.appendChild(row);
+        }
+
+        /**
+         * Fungsi untuk fetch data dari satu API
+         */
+        async function fetchData(url, tbodyId, loadingId, tableWrapperId) {
+            const tbody = document.getElementById(tbodyId);
+            const loading = document.getElementById(loadingId);
+            const tableWrapper = document.getElementById(tableWrapperId);
+
+            // Tampilkan loading, sembunyikan tabel (jika sudah ada)
+            loading.style.display = 'flex';
+            tableWrapper.style.display = 'none';
+            tbody.innerHTML = ''; // Kosongkan data lama
+
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort('Request timed out'), 5000); // 5 detik timeout
+
+                const response = await fetch(url, { signal: controller.signal, cache: 'no-store' }); // cache: 'no-store' untuk refresh
+                clearTimeout(timeoutId); 
+
+                if (!response.ok) {
+                    throw new Error(`Network response was not ok (status: ${response.status})`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.ok && result.data) {
+                    populateTable(result.data, tbody); // Sukses
+                } else {
+                    throw new Error('API response format tidak valid');
+                }
+
+            } catch (error) {
+                console.error(`Gagal fetch data dari ${url}. Error: ${error.message}`);
+                showError(tbody, error); // Tampilkan error di tabel
+            
+            } finally {
+                // Sembunyikan loading dan tampilkan wrapper tabel (untuk data atau error)
+                loading.style.display = 'none';
+                tableWrapper.style.display = 'block';
+            }
+        }
+
+        /**
+         * Fungsi untuk me-refresh SEMUA data
+         */
+        async function refreshAllData() {
+            // 1. Set tombol ke status loading
+            refreshButton.disabled = true;
+            buttonText.textContent = 'Memuat ulang...';
+            buttonIcon.classList.add('animate-spin');
+
+            // 2. Jalankan kedua fetch secara paralel
+            // Promise.allSettled akan menunggu keduanya selesai, walau salah satu gagal
+            await Promise.allSettled([
+                fetchData(api1, 'api-1-body', 'loading-1', 'table-wrapper-1'),
+                fetchData(api2, 'api-2-body', 'loading-2', 'table-wrapper-2')
+            ]);
+
+            // 3. Kembalikan tombol ke status normal
+            refreshButton.disabled = false;
+            buttonText.textContent = 'Refresh Stok';
+            buttonIcon.classList.remove('animate-spin');
+        }
+
+        // --- Event Listeners ---
+
+        // 1. Jalankan refresh saat tombol di-klik
+        refreshButton.addEventListener('click', refreshAllData);
+
+        // 2. Jalankan refresh saat halaman pertama kali dimuat
+        document.addEventListener('DOMContentLoaded', () => {
+            refreshAllData();
+        });
+
+    </script>
+</body>
+</html>
