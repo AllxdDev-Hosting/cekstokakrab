@@ -1,220 +1,207 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cek Stok Akrab (v5 - Proxy Workaround)</title>
-    <!-- Memuat Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #f7f8fa; }
-        .loader {
-            border: 4px solid #e5e7eb; border-top: 4px solid #4f46e5;
-            border-radius: 50%; width: 40px; height: 40px;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-    </style>
+  <meta charset="UTF-8">
+  <title>Cek Stock XDA & Akrab</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background: #f5f5f5;
+    }
+    h1 {
+      margin-bottom: 5px;
+    }
+    h2 {
+      margin-top: 30px;
+    }
+    .card {
+      background: #fff;
+      padding: 15px 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+      margin-bottom: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px 10px;
+      text-align: left;
+      font-size: 14px;
+    }
+    th {
+      background: #eee;
+    }
+    tr:nth-child(even) {
+      background: #fafafa;
+    }
+    .empty {
+      color: #777;
+      font-style: italic;
+      margin-top: 5px;
+    }
+    .status-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: bold;
+    }
+    .badge-ada {
+      background: #d4edda;
+      color: #155724;
+    }
+    .badge-habis {
+      background: #f8d7da;
+      color: #721c24;
+    }
+    .stock-zero {
+      color: #c0392b;
+      font-weight: bold;
+    }
+  </style>
 </head>
-<body class="min-h-screen p-4 md:p-8 lg:p-12">
+<body>
 
-    <div class="max-w-6xl mx-auto">
-        <h1 class="text-3xl md:text-4xl font-extrabold text-center text-gray-900 mb-6">
-            Live Stock Checker
-        </h1>
-        <p class="text-center text-gray-500 mb-6 text-sm">Menggunakan 'Proxy Workaround' untuk data real-time.</p>
+  <h1>Cek Stock</h1>
+  <div>Data dari dua API: <code>Tess.php</code> dan <code>cek_stock_akrab</code>.</div>
 
-        <!-- Tombol Refresh -->
-        <div class="text-center mb-10">
-            <button id="refresh-button" class="inline-flex items-center justify-center px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-indigo-400">
-                <svg id="refresh-icon" class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001a.75.75 0 0 1 .748.747 11.95 11.95 0 0 1-2.062 5.923c-1.5 2.113-3.75 3.52-6.474 4.008a12 12 0 1 1 2.802-13.923.75.75 0 0 1 .748-.747Z" />
-                </svg>
-                <span id="refresh-text">Refresh Stok</span>
-            </button>
-        </div>
-
-        <!-- Kontainer untuk dua kartu slot -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
-            
-            <!-- Kartu Slot 1 -->
-            <div class="bg-white rounded-xl shadow-lg overflow-hidden">
-                <div class="bg-gradient-to-r from-indigo-500 to-purple-600 p-5"><h2 class="text-2xl font-bold text-white text-center">Slot 1</h2></div>
-                <div class="p-4">
-                    <div id="content-1">
-                        <div id="loading-1" class="flex justify-center items-center py-10"><div class="loader"></div></div>
-                        <div class="overflow-x-auto hidden" id="table-wrapper-1">
-                            <table class="w-full">
-                                <thead><tr class="text-gray-500 uppercase text-xs font-semibold"><th class="p-3 text-left">Nama Paket</th><th class="p-3 text-center">Status</th><th class="p-3 text-center">Sisa Slot</th></tr></thead>
-                                <tbody id="api-1-body" class="text-gray-800"></tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Kartu Slot 2 -->
-            <div class="bg-white rounded-xl shadow-lg overflow-hidden">
-                <div class="bg-gradient-to-r from-teal-500 to-cyan-600 p-5"><h2 class="text-2xl font-bold text-white text-center">Slot 2</h2></div>
-                <div class="p-4">
-                    <div id="content-2">
-                        <div id="loading-2" class="flex justify-center items-center py-10"><div class="loader"></div></div>
-                        <div class="overflow-x-auto hidden" id="table-wrapper-2">
-                            <table class="w-full">
-                                <thead><tr class="text-gray-500 uppercase text-xs font-semibold"><th class="p-3 text-left">Nama Paket</th><th class="p-3 text-center">Status</th><th class="p-3 text-center">Sisa Slot</th></tr></thead>
-                                <tbody id="api-2-body" class="text-gray-800"></tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Legenda -->
-        <div class="text-center mt-10 text-gray-600">
-             <h3 class="font-semibold mb-3 text-lg">Legenda Status</h3>
-            <div class="flex justify-center items-center space-x-6">
-                <div class="flex items-center space-x-2">
-                    <svg class="w-6 h-6 text-green-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
-                    <span>Tersedia</span>
-                </div>
-                <div class="flex items-center space-x-2">
-                    <svg class="w-6 h-6 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m9.75 9.75 4.5 4.5m0-4.5-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
-                    <span>Habis / Kosong</span>
-                </div>
-            </div>
-        </div>
+  <!-- CARD 1: allxddev.com -->
+  <div class="card">
+    <h2>Stock XDA (allxddev.com/tes/Tess.php)</h2>
+    <div id="xda-loading">Loading data...</div>
+    <div id="xda-container" style="display:none;">
+      <table>
+        <thead>
+          <tr>
+            <th>Kode</th>
+            <th>Stock</th>
+          </tr>
+        </thead>
+        <tbody id="xda-body">
+          <!-- diisi oleh JS -->
+        </tbody>
+      </table>
+      <div id="xda-empty" class="empty" style="display:none;">Tidak ada data XDA.</div>
     </div>
+  </div>
 
-    <script>
-        // --- INILAH "AKAL"NYA ---
-        // Kita bungkus URL asli Anda dengan URL proxy 'allorigins.win'
-        const proxy = 'https://api.allorigins.win/raw?url=';
-        const originalApi1 = 'https://xlstock.serversaya.site/api_v3/cek_stock_akrab';
-        const originalApi2 = 'https://panel.khfy-store.com/api_v3/cek_stock_akrab';
+  <!-- CARD 2: panel.khfy-store.com -->
+  <div class="card">
+    <h2>Stock Akrab (panel.khfy-store.com/api_v3/cek_stock_akrab)</h2>
+    <div id="akrab-loading">Loading data...</div>
+    <div id="akrab-container" style="display:none;">
+      <table>
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th>Nama</th>
+            <th>Sisa Slot</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="akrab-body">
+          <!-- diisi oleh JS -->
+        </tbody>
+      </table>
+      <div id="akrab-empty" class="empty" style="display:none;">Tidak ada data Akrab.</div>
+    </div>
+  </div>
 
-        // URL API yang akan dipanggil adalah URL yang sudah dibungkus proxy
-        const api1 = `${proxy}${encodeURIComponent(originalApi1)}`;
-        const api2 = `${proxy}${encodeURIComponent(originalApi2)}`;
-        // -------------------------
+  <script>
+    // --- API 1: XDA / Tess.php ---
+    fetch('https://allxddev.com/tes/Tess.php')
+      .then(res => res.json())
+      .then(json => {
+        document.getElementById('xda-loading').style.display = 'none';
+        document.getElementById('xda-container').style.display = 'block';
 
-        const refreshButton = document.getElementById('refresh-button');
-        const buttonIcon = document.getElementById('refresh-icon');
-        const buttonText = document.getElementById('refresh-text');
+        const tbody = document.getElementById('xda-body');
+        const xdaData = json.xda || [];
 
-        const iconAvailable = `<svg class="w-6 h-6 text-green-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>`;
-        const iconUnavailable = `<svg class="w-6 h-6 text-red-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m9.75 9.75 4.5 4.5m0-4.5-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>`;
-
-        function populateTable(data, tbody) {
-            tbody.innerHTML = ''; 
-            if (!data || data.length === 0) {
-                 tbody.innerHTML = '<tr><td colspan="3" class="text-center p-4 text-gray-500">API mengembalikan data kosong.</td></tr>';
-                 return;
-            }
-            data.forEach(item => {
-                const isAvailable = item.sisa_slot > 0;
-                const statusIcon = isAvailable ? iconAvailable : iconUnavailable;
-                const slotBadge = isAvailable ? 
-                    `<span class="bg-green-100 text-green-800 text-sm font-medium px-3 py-1 rounded-full">${item.sisa_slot}</span>` :
-                    `<span class="bg-red-100 text-red-800 text-sm font-medium px-3 py-1 rounded-full">${item.sisa_slot}</span>`;
-                const row = document.createElement('tr');
-                row.className = 'border-b border-gray-100';
-                row.innerHTML = `
-                    <td class="p-3.5 text-sm font-medium text-gray-900">${item.nama}</td>
-                    <td class="p-3.5 text-center">${statusIcon}</td>
-                    <td class="p-3.5 text-center">${slotBadge}</td>
-                `;
-                tbody.appendChild(row);
-            });
+        if (!xdaData.length) {
+          document.getElementById('xda-empty').style.display = 'block';
+          return;
         }
 
-        function showError(tbody, error) {
-            tbody.innerHTML = ''; 
-            let errorMessage = 'Gagal memuat data.';
-            if (error.message.includes('Failed to fetch') || error.message.includes('Proxy response')) {
-                errorMessage = 'Gagal terhubung. Proxy atau API mungkin offline.';
-            } else if (error.message.includes('timeout')) {
-                errorMessage = 'Request timeout. Server API/Proxy lambat merespon.';
-            } else if (error.message.includes('JSON.parse')) {
-                errorMessage = 'Data dari proxy rusak. Coba refresh lagi.';
-            }
+        xdaData.forEach(item => {
+          const tr = document.createElement('tr');
 
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td colspan="3" class="p-6 text-center text-red-600">
-                    <span class="font-bold">Terjadi Kesalahan:</span><br>
-                    <span class="text-sm">${errorMessage}</span><br>
-                    <span class="text-xs text-gray-500 mt-2">Ini bisa terjadi jika proxy 'allorigins.win' sedang down.</span>
-                </td>
-            `;
-            tbody.appendChild(row);
+          const tdKode = document.createElement('td');
+          tdKode.textContent = item.kode;
+
+          const tdStock = document.createElement('td');
+          tdStock.textContent = item.stock;
+          if (Number(item.stock) === 0) {
+            tdStock.classList.add('stock-zero');
+          }
+
+          tr.appendChild(tdKode);
+          tr.appendChild(tdStock);
+          tbody.appendChild(tr);
+        });
+      })
+      .catch(err => {
+        document.getElementById('xda-loading').textContent = 'Gagal mengambil data XDA: ' + err;
+      });
+
+    // --- API 2: cek_stock_akrab ---
+    fetch('https://panel.khfy-store.com/api_v3/cek_stock_akrab')
+      .then(res => res.json())
+      .then(json => {
+        document.getElementById('akrab-loading').style.display = 'none';
+        document.getElementById('akrab-container').style.display = 'block';
+
+        const tbody = document.getElementById('akrab-body');
+        const data = json.data || [];
+
+        if (!data.length) {
+          document.getElementById('akrab-empty').style.display = 'block';
+          return;
         }
 
-        async function fetchData(url, tbodyId, loadingId, tableWrapperId) {
-            const tbody = document.getElementById(tbodyId);
-            const loading = document.getElementById(loadingId);
-            const tableWrapper = document.getElementById(tableWrapperId);
+        data.forEach(item => {
+          const tr = document.createElement('tr');
 
-            loading.style.display = 'flex';
-            tableWrapper.style.display = 'none';
-            tbody.innerHTML = ''; 
+          const tdType = document.createElement('td');
+          tdType.textContent = item.type;
 
-            try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort('Request timed out'), 8000); // 8 detik (karena pakai proxy)
+          const tdNama = document.createElement('td');
+          tdNama.textContent = item.nama;
 
-                const response = await fetch(url, { signal: controller.signal, cache: 'no-store' });
-                clearTimeout(timeoutId); 
+          const tdSlot = document.createElement('td');
+          tdSlot.textContent = item.sisa_slot;
+          if (Number(item.sisa_slot) === 0) {
+            tdSlot.classList.add('stock-zero');
+          }
 
-                if (!response.ok) {
-                    throw new Error(`Proxy response was not ok (status: ${response.status})`);
-                }
-                
-                // Data dari proxy 'allorigins' datang sebagai JSON yang berisi string JSON lain
-                const proxyResult = await response.json();
-                
-                if (!proxyResult.contents) {
-                     throw new Error('Proxy error: Tidak ada field "contents"');
-                }
+          const tdStatus = document.createElement('td');
+          const span = document.createElement('span');
+          span.classList.add('status-badge');
+          if (Number(item.sisa_slot) > 0) {
+            span.classList.add('badge-ada');
+            span.textContent = 'Tersedia';
+          } else {
+            span.classList.add('badge-habis');
+            span.textContent = 'Habis';
+          }
+          tdStatus.appendChild(span);
 
-                // Kita parse string JSON yang di dalam 'contents'
-                const result = JSON.parse(proxyResult.contents);
-                
-                if (result.ok && result.data) {
-                    populateTable(result.data, tbody); // Sukses
-                } else {
-                    throw new Error('API response (via proxy) format tidak valid');
-                }
+          tr.appendChild(tdType);
+          tr.appendChild(tdNama);
+          tr.appendChild(tdSlot);
+          tr.appendChild(tdStatus);
 
-            } catch (error) {
-                console.error(`Gagal fetch data dari ${url}. Error: ${error.message}`);
-                showError(tbody, error); // Tampilkan error di tabel
-            
-            } finally {
-                loading.style.display = 'none';
-                tableWrapper.style.display = 'block';
-            }
-        }
-
-        async function refreshAllData() {
-            refreshButton.disabled = true;
-            buttonText.textContent = 'Memuat ulang...';
-            buttonIcon.classList.add('animate-spin');
-
-            await Promise.allSettled([
-                fetchData(api1, 'api-1-body', 'loading-1', 'table-wrapper-1'),
-                fetchData(api2, 'api-2-body', 'loading-2', 'table-wrapper-2')
-            ]);
-
-            refreshButton.disabled = false;
-            buttonText.textContent = 'Refresh Stok';
-            buttonIcon.classList.remove('animate-spin');
-        }
-
-        refreshButton.addEventListener('click', refreshAllData);
-        document.addEventListener('DOMContentLoaded', refreshAllData);
-
-    </script>
+          tbody.appendChild(tr);
+        });
+      })
+      .catch(err => {
+        document.getElementById('akrab-loading').textContent = 'Gagal mengambil data Akrab: ' + err;
+      });
+  </script>
 </body>
 </html>
